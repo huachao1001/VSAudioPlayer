@@ -2,7 +2,7 @@
   "name": "audio-player",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "huachao",
   "engines": {
     "vscode": "^1.80.0"
@@ -78,7 +78,7 @@
     "build": "node esbuild.js --production",
     "watch": "node esbuild.js --watch",
     "gen:icon": "node scripts/svg2png.js",
-    "package": "npm run build && vsce package --no-dependencies"
+    "package": "npm run build && npm version patch --no-git-tag-version && vsce package --no-dependencies"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
