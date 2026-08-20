@@ -182,7 +182,7 @@ function addTrack(id: string, name: string, dataUrl: string) {
       ctx.fillText(label, x, h - 6)
     }
   }
-  const ro = new ResizeObserver(() => drawGrid())
+  const ro = new ResizeObserver(() => { drawGrid(); placeMark() })
   ro.observe(waveEl)
   const hoverLine = document.createElement('div')
   hoverLine.className = 'hover-line'
@@ -257,6 +257,25 @@ function addTrack(id: string, name: string, dataUrl: string) {
   }
   resizer.addEventListener('mousedown', onResizeDown)
 
+  // 按 markTime 重定位标记线/tag：点击设置后，窗口缩放时由 ResizeObserver 调用以保持位置正确
+  function placeMark() {
+    if (markTime === null) return
+    const duration = ws.getDuration() || 0
+    if (duration <= 0) return
+    const rect = waveEl.getBoundingClientRect()
+    if (rect.width <= 0) return
+    const x = (markTime / duration) * rect.width
+    markLine.style.left = x + 'px'
+    markLine.style.display = 'block'
+    markTag.textContent = fmt(markTime)
+    markTag.style.display = 'block'
+    const tagW = markTag.offsetWidth || 40
+    let tx = x
+    if (x - tagW / 2 < 0) tx = tagW / 2
+    else if (x + tagW / 2 > rect.width) tx = rect.width - tagW / 2
+    markTag.style.left = tx + 'px'
+  }
+
   // 点击波形：记录起点时间并显示标记竖线（WaveSurfer 自身会同时 seek 到该点）
   waveEl.addEventListener('click', (ev: MouseEvent) => {
     const tgt = ev.target as HTMLElement
@@ -267,15 +286,7 @@ function addTrack(id: string, name: string, dataUrl: string) {
     const ratio = rect.width > 0 ? x / rect.width : 0
     const duration = ws.getDuration() || 0
     markTime = ratio * duration
-    markLine.style.left = x + 'px'
-    markLine.style.display = 'block'
-    markTag.textContent = fmt(markTime)
-    markTag.style.display = 'block'
-    const tagW = markTag.offsetWidth || 40
-    let tx = x
-    if (x - tagW / 2 < 0) tx = tagW / 2
-    else if (x + tagW / 2 > rect.width) tx = rect.width - tagW / 2
-    markTag.style.left = tx + 'px'
+    placeMark()
   })
 
   ws.load(dataUrl)
