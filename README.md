@@ -31,8 +31,6 @@ npm run build      # production bundle to dist/
 npm run package    # build + package a .vsix
 ```
 
-No runtime dependencies — `wavesurfer.js` is inlined into `dist/webview.js`.
-
 ## License
 
 MIT
