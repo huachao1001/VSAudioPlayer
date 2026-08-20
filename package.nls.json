@@ -1,0 +1,14 @@
+{
+  "displayName": "Audio Player",
+  "description": "Audio waveform player: visualize waveforms, add multiple tracks, show timeline and playback time",
+  "command.category": "Audio Player",
+  "command.addFile.title": "Add to Audio Player",
+  "ext.title.selectAudio": "Select audio files",
+  "ext.filters.audio": "Audio",
+  "ext.info.openFirst": "Open an audio file first to use it as the player, then add other tracks.",
+  "ext.diag.readFileFail": "readFile failed: ",
+  "wv.empty": "No audio yet. Right-click an audio file in the Explorer to add it.",
+  "wv.btn.playPause": "Play/Pause",
+  "wv.diag.received": "[wv] received addAudio: {0} ({1} chars), rendering…",
+  "wv.diag.scriptLoaded": "[wv] script loaded, sending ready"
+}

@@ -1,0 +1,91 @@
+{
+  "name": "audio-player",
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "version": "0.0.1",
+  "publisher": "huachao",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/huachao1001/VSAudioPlayer"
+  },
+  "license": "MIT",
+  "activationEvents": [
+    "onCustomEditor:audioPlayer.audioEditor"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "audioPlayer.audioEditor",
+        "displayName": "Audio Player",
+        "priority": "default",
+        "selector": [
+          {
+            "filenamePattern": "*.wav"
+          },
+          {
+            "filenamePattern": "*.mp3"
+          },
+          {
+            "filenamePattern": "*.ogg"
+          },
+          {
+            "filenamePattern": "*.flac"
+          },
+          {
+            "filenamePattern": "*.m4a"
+          },
+          {
+            "filenamePattern": "*.aac"
+          },
+          {
+            "filenamePattern": "*.webm"
+          },
+          {
+            "filenamePattern": "*.opus"
+          },
+          {
+            "filenamePattern": "*.mp4"
+          }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "audioPlayer.addFile",
+        "title": "%command.addFile.title%",
+        "category": "%command.category%"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "audioPlayer.addFile",
+          "group": "navigation@99",
+          "when": "resourceExtname =~ /\\.(wav|mp3|ogg|flac|m4a|aac|webm|opus|mp4)$/i"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js --production",
+    "watch": "node esbuild.js --watch",
+    "gen:icon": "node scripts/svg2png.js",
+    "package": "npm run build && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/node": "^18.19.0",
+    "@types/vscode": "^1.80.0",
+    "esbuild": "^0.20.2",
+    "typescript": "^5.4.0",
+    "wavesurfer.js": "^7.7.3"
+  }
+}

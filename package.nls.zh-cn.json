@@ -1,0 +1,14 @@
+{
+  "displayName": "Audio Player",
+  "description": "音频波形播放器：可视化波形图、添加多个音频、显示时间轴与播放时间",
+  "command.category": "Audio Player",
+  "command.addFile.title": "添加到 Audio Player",
+  "ext.title.selectAudio": "选择音频文件",
+  "ext.filters.audio": "音频",
+  "ext.info.openFirst": "先双击打开一个音频文件作为播放器，再添加其它音轨。",
+  "ext.diag.readFileFail": "readFile 失败: ",
+  "wv.empty": "暂无音频，请右键资源管理器中的音频文件添加",
+  "wv.btn.playPause": "播放/暂停",
+  "wv.diag.received": "[wv] 收到 addAudio: {0} ({1} 字符)，正在渲染…",
+  "wv.diag.scriptLoaded": "[wv] 脚本已加载，发送 ready"
+}
