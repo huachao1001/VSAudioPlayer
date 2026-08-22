@@ -2,7 +2,7 @@
   "name": "audio-player",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "huachao",
   "engines": {
     "vscode": "^1.80.0"
@@ -94,8 +94,14 @@
         "audioPlayer.pcm.dataType": {
           "type": "string",
           "default": "int16",
-          "enum": ["int16", "fp32"],
-          "enumDescriptions": ["16-bit signed little-endian integer", "32-bit IEEE float"],
+          "enum": [
+            "int16",
+            "fp32"
+          ],
+          "enumDescriptions": [
+            "16-bit signed little-endian integer",
+            "32-bit IEEE float"
+          ],
           "description": "%config.pcm.dataType.desc%"
         }
       }
@@ -103,8 +109,21 @@
     "languages": [
       {
         "id": "audio-player",
-        "extensions": [".wav", ".mp3", ".ogg", ".flac", ".m4a", ".aac", ".webm", ".opus", ".mp4", ".pcm"],
-        "aliases": ["Audio"],
+        "extensions": [
+          ".wav",
+          ".mp3",
+          ".ogg",
+          ".flac",
+          ".m4a",
+          ".aac",
+          ".webm",
+          ".opus",
+          ".mp4",
+          ".pcm"
+        ],
+        "aliases": [
+          "Audio"
+        ],
         "icon": {
           "light": "media/audio-icon-light.svg",
           "dark": "media/audio-icon-dark.svg"

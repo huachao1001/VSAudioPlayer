@@ -1,6 +1,8 @@
 # Audio Player
 
-A VS Code extension that opens audio files (wav / mp3 / ogg / flac / m4a / aac / webm / opus / mp4) directly in an editor tab — rendering an interactive waveform and playing them in-place.
+A VS Code extension that opens audio files (wav / mp3 / ogg / flac / m4a / aac / webm / opus / mp4 / pcm) directly in an editor tab — rendering an interactive waveform and playing them in-place.
+
+> PCM support is raw (headerless) PCM — sample rate, channel count and data type (int16 / fp32) are read from the `audioPlayer.pcm.*` settings.
 
 ![Audio Player screenshot](media/demo.png)
 
