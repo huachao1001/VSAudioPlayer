@@ -53,6 +53,9 @@
           },
           {
             "filenamePattern": "*.mp4"
+          },
+          {
+            "filenamePattern": "*.pcm"
           }
         ]
       }
@@ -69,9 +72,33 @@
         {
           "command": "audioPlayer.addFile",
           "group": "navigation@99",
-          "when": "resourceExtname =~ /\\.(wav|mp3|ogg|flac|m4a|aac|webm|opus|mp4)$/i"
+          "when": "resourceExtname =~ /\\.(wav|mp3|ogg|flac|m4a|aac|webm|opus|mp4|pcm)$/i"
         }
       ]
+    },
+    "configuration": {
+      "title": "Audio Player",
+      "properties": {
+        "audioPlayer.pcm.sampleRate": {
+          "type": "number",
+          "default": 16000,
+          "minimum": 1,
+          "description": "%config.pcm.sampleRate.desc%"
+        },
+        "audioPlayer.pcm.channels": {
+          "type": "number",
+          "default": 1,
+          "minimum": 1,
+          "description": "%config.pcm.channels.desc%"
+        },
+        "audioPlayer.pcm.dataType": {
+          "type": "string",
+          "default": "int16",
+          "enum": ["int16", "fp32"],
+          "enumDescriptions": ["16-bit signed little-endian integer", "32-bit IEEE float"],
+          "description": "%config.pcm.dataType.desc%"
+        }
+      }
     }
   },
   "scripts": {

@@ -23,6 +23,14 @@ interface Track {
   name: string
   ws: WaveSurfer
   card: HTMLElement
+  pcm?: { sampleRate: number; channels: number; dataType: string }
+  reload: (dataUrl: string) => void
+}
+
+interface PcmInfo {
+  sampleRate: number
+  channels: number
+  dataType: string
 }
 
 interface AddAudioMsg {
@@ -30,11 +38,18 @@ interface AddAudioMsg {
   id: string
   name: string
   dataUrl: string
+  pcm?: PcmInfo
 }
 
 interface DiagMsg {
   type: 'diag'
   text: string
+}
+
+interface RewrapAudioMsg {
+  type: 'rewrapAudio'
+  id: string
+  dataUrl: string
 }
 
 interface I18nBundle {
@@ -58,6 +73,9 @@ function fmtStr(tpl: string, ...args: (string | number)[]): string {
 const tracks: Track[] = []
 let syncing = false
 
+// PCM 头部下拉常用采样率；当前值不在列表里会自动补入
+const PCM_SAMPLE_RATES = [8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 96000, 192000]
+
 function fmt(t: number): string {
   if (!isFinite(t) || t < 0) t = 0
   const m = Math.floor(t / 60)
@@ -71,7 +89,7 @@ function isClock(ws: WaveSurfer): boolean {
   return tracks.length > 0 && tracks[0].ws === ws
 }
 
-function addTrack(id: string, name: string, dataUrl: string) {
+function addTrack(id: string, name: string, dataUrl: string, pcm?: PcmInfo) {
   emptyEl.style.display = 'none'
 
   const card = document.createElement('div')
@@ -98,6 +116,52 @@ function addTrack(id: string, name: string, dataUrl: string) {
   const curEl = card.querySelector('.cur') as HTMLElement
   const durEl = card.querySelector('.dur') as HTMLElement
   const infoEl = card.querySelector('.track-info') as HTMLElement
+
+  // PCM 音轨：头部徽标改为三个下拉（通道/采样率/数据类型），任意改动即请求扩展重打包
+  if (pcm) {
+    const srSel = document.createElement('select')
+    srSel.className = 'pcm-sr'
+    const rates = [...PCM_SAMPLE_RATES]
+    if (!rates.includes(pcm.sampleRate)) rates.push(pcm.sampleRate)
+    rates.sort((a, b) => a - b)
+    for (const r of rates) {
+      const o = document.createElement('option')
+      o.value = String(r)
+      o.textContent = (r / 1000).toFixed(r % 1000 ? 1 : 0) + ' kHz'
+      if (r === pcm.sampleRate) o.selected = true
+      srSel.appendChild(o)
+    }
+    const chSel = document.createElement('select')
+    chSel.className = 'pcm-ch'
+    for (const c of [1, 2, 4, 6, 8]) {
+      const o = document.createElement('option')
+      o.value = String(c)
+      o.textContent = c + 'ch'
+      if (c === pcm.channels) o.selected = true
+      chSel.appendChild(o)
+    }
+    const dtSel = document.createElement('select')
+    dtSel.className = 'pcm-dt'
+    for (const d of ['int16', 'fp32'] as const) {
+      const o = document.createElement('option')
+      o.value = d
+      o.textContent = d
+      if (d === pcm.dataType) o.selected = true
+      dtSel.appendChild(o)
+    }
+    infoEl.innerHTML = ''
+    infoEl.appendChild(chSel)
+    const s1 = document.createElement('span'); s1.className = 'pcm-sep'; s1.textContent = '·'; infoEl.appendChild(s1)
+    infoEl.appendChild(srSel)
+    const s2 = document.createElement('span'); s2.className = 'pcm-sep'; s2.textContent = '·'; infoEl.appendChild(s2)
+    infoEl.appendChild(dtSel)
+    const fireRewrap = () => {
+      vscode.postMessage({ type: 'rewrapPcm', id, sampleRate: parseInt(srSel.value, 10), channels: parseInt(chSel.value, 10), dataType: dtSel.value })
+    }
+    srSel.addEventListener('change', fireRewrap)
+    chSel.addEventListener('change', fireRewrap)
+    dtSel.addEventListener('change', fireRewrap)
+  }
 
   const ws = WaveSurfer.create({
     container: waveEl,
@@ -310,6 +374,8 @@ function addTrack(id: string, name: string, dataUrl: string) {
     durEl.textContent = fmt(duration)
     gridDuration = duration
     drawGrid()
+    // PCM 音轨的 info 已由下拉框承担，这里只处理非 PCM 的解码信息
+    if (pcm) return
     // 通道数与采样率取自解码后的 AudioBuffer
     const dec = ws.getDecodedData()
     const ch = dec ? dec.numberOfChannels : 0
@@ -355,16 +421,28 @@ function addTrack(id: string, name: string, dataUrl: string) {
     void ws.play()
   }
 
-  tracks.push({ id, name, ws, card })
+  // 重打包后用新 dataUrl 重新解码：清除起点标记、归零当前时间，避免旧时长残留
+  const reload = (newDataUrl: string) => {
+    markTime = null
+    markLine.style.display = 'none'
+    markTag.style.display = 'none'
+    curEl.textContent = fmt(0)
+    ws.load(newDataUrl)
+  }
+
+  tracks.push({ id, name, ws, card, pcm, reload })
 }
 
 window.addEventListener('message', (e: MessageEvent) => {
-  const msg = e.data as AddAudioMsg | DiagMsg
+  const msg = e.data as AddAudioMsg | DiagMsg | RewrapAudioMsg
   if (!msg) return
   if (msg.type === 'addAudio') {
     const _e = document.getElementById('empty')
     if (_e) _e.textContent = fmtStr(__apI18n.diagReceived, msg.name, msg.dataUrl.length)
-    addTrack(msg.id, msg.name, msg.dataUrl)
+    addTrack(msg.id, msg.name, msg.dataUrl, msg.pcm)
+  } else if (msg.type === 'rewrapAudio') {
+    const tr = tracks.find((t) => t.id === msg.id)
+    if (tr) tr.reload(msg.dataUrl)
   } else if (msg.type === 'diag') {
     const _e = document.getElementById('empty')
     if (_e) { _e.style.display = ''; _e.textContent = msg.text }

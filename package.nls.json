@@ -10,5 +10,8 @@
   "wv.empty": "No audio yet. Right-click an audio file in the Explorer to add it.",
   "wv.btn.playPause": "Play/Pause",
   "wv.diag.received": "[wv] received addAudio: {0} ({1} chars), rendering…",
-  "wv.diag.scriptLoaded": "[wv] script loaded, sending ready"
+  "wv.diag.scriptLoaded": "[wv] script loaded, sending ready",
+  "config.pcm.sampleRate.desc": "Sample rate (Hz) for raw PCM files. Used only when opening .pcm files.",
+  "config.pcm.channels.desc": "Number of channels for raw PCM files (1=mono, 2=stereo).",
+  "config.pcm.dataType.desc": "Sample data type for raw PCM files: int16 (16-bit signed LE integer) or fp32 (32-bit IEEE float)."
 }

@@ -4,4 +4,3 @@ dist/
 *.vsix
 .codegraph/
 .opencode/
-.vscode/
