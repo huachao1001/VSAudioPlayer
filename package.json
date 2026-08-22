@@ -99,7 +99,18 @@
           "description": "%config.pcm.dataType.desc%"
         }
       }
-    }
+    },
+    "languages": [
+      {
+        "id": "audio-player",
+        "extensions": [".wav", ".mp3", ".ogg", ".flac", ".m4a", ".aac", ".webm", ".opus", ".mp4", ".pcm"],
+        "aliases": ["Audio"],
+        "icon": {
+          "light": "media/audio-icon-light.svg",
+          "dark": "media/audio-icon-dark.svg"
+        }
+      }
+    ]
   },
   "scripts": {
     "build": "node esbuild.js --production",
