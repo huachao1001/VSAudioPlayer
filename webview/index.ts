@@ -5,6 +5,29 @@ import WaveSurfer from 'wavesurfer.js'
 const SVG_PLAY = `<svg viewBox="0 0 1024 1024" width="128" height="128" aria-hidden="true"><path d="M512.512 512m-418.8672 0a418.8672 418.8672 0 1 0 837.7344 0 418.8672 418.8672 0 1 0-837.7344 0Z" fill="currentColor"/><path d="M683.6224 470.016l-231.424-133.5808c-32.3072-18.6368-72.704 4.6592-72.704 41.984v267.2128c0 37.3248 40.3968 60.6208 72.704 41.984l231.424-133.5808c32.3072-18.7392 32.3072-65.3312 0-84.0192z" fill="#ffffff"/></svg>`
 const SVG_PAUSE = `<svg viewBox="0 0 1024 1024" width="128" height="128" aria-hidden="true"><path d="M512.512 512m-418.8672 0a418.8672 418.8672 0 1 0 837.7344 0 418.8672 418.8672 0 1 0-837.7344 0Z" fill="currentColor"/><rect x="360" y="330" width="95" height="364" rx="24" fill="#ffffff"/><rect x="569" y="330" width="95" height="364" rx="24" fill="#ffffff"/></svg>`
 
+// 将 CSS 颜色转为带透明度的 rgba，供波形半透明显示底层刻度线
+function withAlpha(color: string, alpha: number): string {
+  const c = color.trim()
+  const rgba = /^rgba?\(([^)]+)\)$/i.exec(c)
+  if (rgba) {
+    const p = rgba[1].split(/[,\/\s]+/).filter(Boolean).map(Number)
+    if (p.length >= 3 && p.slice(0, 3).every((n) => !isNaN(n))) {
+      const a = p.length > 3 && !isNaN(p[3]) ? p[3] : 1
+      return `rgba(${p[0]},${p[1]},${p[2]},${a * alpha})`
+    }
+  }
+  const hex = /^#([0-9a-f]{3,8})$/i.exec(c)
+  if (hex) {
+    let h = hex[1]
+    if (h.length === 3 || h.length === 4) h = [...h].map((ch) => ch + ch).join('')
+    const r = parseInt(h.slice(0, 2), 16)
+    const g = parseInt(h.slice(2, 4), 16)
+    const b = parseInt(h.slice(4, 6), 16)
+    if (![r, g, b].some(isNaN)) return `rgba(${r},${g},${b},${alpha})`
+  }
+  return c
+}
+
 // 读取主题配色：未播放=前景色（暗白/亮黑自动跟随），已播放=提亮一档的绿，播放头=中性灰
 function themeColors(): { wave: string; progress: string; cursor: string } {
   const cs = getComputedStyle(document.body)
@@ -13,7 +36,8 @@ function themeColors(): { wave: string; progress: string; cursor: string } {
   const cursor = (cs.getPropertyValue('--vscode-descriptionForeground').trim()) || '#888'
   // body.color 即 --vscode-foreground：暗主题近白、亮主题近黑
   const wave = cs.color || '#d4d4d4'
-  return { wave, progress, cursor }
+  // 波形保留 10% 透明度，可透出网格参考线
+  return { wave: withAlpha(wave, 0.9), progress: withAlpha(progress, 0.95), cursor }
 }
 
 declare function acquireVsCodeApi(): { postMessage(msg: unknown): void }
@@ -25,6 +49,7 @@ interface Track {
   card: HTMLElement
   pcm?: { sampleRate: number; channels: number; dataType: string }
   reload: (dataUrl: string) => void
+  redrawGrid: () => void
 }
 
 interface PcmInfo {
@@ -176,8 +201,14 @@ function addTrack(id: string, name: string, dataUrl: string, pcm?: PcmInfo) {
   })
 
   // 悬浮竖线 + 时间气泡 + 拖拽改高度：全部基于外层 .wave-canvas，绝对定位不占流，避免干扰播放按钮对齐
+  // 左侧预留 GUTTER 像素显示纵坐标刻度，波形从刻度区右侧开始
+  const GUTTER = 32
   const waveHost = waveEl.firstElementChild as HTMLElement
-  if (waveHost) { waveHost.style.width = '100%'; waveHost.style.height = '100%' }
+  if (waveHost) {
+    waveHost.style.width = `calc(100% - ${GUTTER}px)`
+    waveHost.style.height = '100%'
+    waveHost.style.marginLeft = GUTTER + 'px'
+  }
   // 时间网格：叠在波形之下（z-index:1），主刻度全高竖线+时间标签、次刻度短竖线
   const grid = document.createElement('canvas')
   grid.className = 'wave-grid'
@@ -192,7 +223,10 @@ function addTrack(id: string, name: string, dataUrl: string, pcm?: PcmInfo) {
     grid.style.width = w + 'px'
     grid.style.height = h + 'px'
     const ctx = grid.getContext('2d')
-    if (!ctx || gridDuration <= 0 || w <= 0 || h <= 0) return
+    // 波形区从 GUTTER 开始，刻度标签画在左侧留白
+    const gx = GUTTER
+    const gw = w - gx
+    if (!ctx || gridDuration <= 0 || gw <= 10 || h <= 0) return
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, w, h)
     // 自适应步长：时长/步长 ≤ 12，避免刻度过密
@@ -208,18 +242,58 @@ function addTrack(id: string, name: string, dataUrl: string, pcm?: PcmInfo) {
       const sec = (t % 60).toFixed(0).padStart(2, '0')
       return m + ':' + sec
     }
+    // 主题彩色刻度：参考线用强调绿，零轴线用暖橙，时间竖线用蓝色
+    const cs = getComputedStyle(document.body)
+    const warm = cs.getPropertyValue('--ap-warm').trim() || '#ea580c'
+    const yellow = '#eab308'
     // 水平零轴线
-    ctx.strokeStyle = 'rgba(128,128,128,.18)'
+    ctx.strokeStyle = withAlpha(warm, 0.55)
     ctx.lineWidth = 1
     ctx.beginPath()
-    ctx.moveTo(0, h / 2)
+    ctx.moveTo(gx, h / 2)
     ctx.lineTo(w, h / 2)
     ctx.stroke()
+    // 纵坐标参考线（±1/±0.5，normalize 后峰值即 1）+ 左侧刻度标签
+    ctx.font = '10px ' + (window.getComputedStyle(document.body).fontFamily || 'sans-serif')
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    const levels: Array<[number, string]> = [[1, '1.0'], [0.5, '+0.5'], [-0.5, '-0.5'], [-1, '-1.0']]
+    for (const [v, label] of levels) {
+      const y = h / 2 - (v * h) / 2
+      // 参考线夹在画布内，避免 ±1 贴边被裁掉一半
+      const ly = Math.min(Math.max(y, 0.5), h - 0.5)
+      ctx.strokeStyle = withAlpha(yellow, 0.3)
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(gx, ly)
+      ctx.lineTo(w, ly)
+      ctx.stroke()
+      // 刻度区右缘短刻度线
+      ctx.beginPath()
+      ctx.moveTo(gx - 4, ly)
+      ctx.lineTo(gx, ly)
+      ctx.stroke()
+      // 标签纵向夹入画布（10px 字体中基线约需 7px 余量）
+      const ty = Math.min(Math.max(y, 7), h - 7)
+      // 描边避免被波形盖住
+      ctx.lineWidth = 3
+      ctx.strokeStyle = 'rgba(0,0,0,.45)'
+      ctx.strokeText(label, 6, ty)
+      ctx.fillStyle = 'rgba(234,179,8,.95)'
+      ctx.fillText(label, 6, ty)
+    }
+    ctx.setLineDash([])
+    // 零刻度标签
+    ctx.lineWidth = 3
+    ctx.strokeStyle = 'rgba(0,0,0,.45)'
+    ctx.strokeText('0', 6, h / 2)
+    ctx.fillStyle = 'rgba(234,179,8,.95)'
+    ctx.fillText('0', 6, h / 2)
     // 次刻度短竖线
-    ctx.strokeStyle = 'rgba(128,128,128,.12)'
+    ctx.strokeStyle = withAlpha(yellow, 0.3)
     ctx.lineWidth = 1
     for (let t = 0; t <= gridDuration + 1e-6; t += minor) {
-      const x = (t / gridDuration) * w
+      const x = gx + (t / gridDuration) * gw
       ctx.beginPath()
       ctx.moveTo(x, h - 4)
       ctx.lineTo(x, h)
@@ -230,19 +304,20 @@ function addTrack(id: string, name: string, dataUrl: string, pcm?: PcmInfo) {
     ctx.textAlign = 'center'
     ctx.textBaseline = 'bottom'
     for (let t = 0; t <= gridDuration + 1e-6; t += step) {
-      const x = (t / gridDuration) * w
-      ctx.strokeStyle = 'rgba(128,128,128,.28)'
+      const x = gx + (t / gridDuration) * gw
+      ctx.strokeStyle = withAlpha(yellow, 0.5)
       ctx.lineWidth = 1
       ctx.beginPath()
       ctx.moveTo(x, 0)
       ctx.lineTo(x, h)
       ctx.stroke()
+      if (t === 0) continue // 左下角与纵坐标 -1.0 标签重叠，不画 0 刻度
       const label = fmtTick(t)
       // 描边避免被波形盖住
       ctx.lineWidth = 3
       ctx.strokeStyle = 'rgba(0,0,0,.45)'
       ctx.strokeText(label, x, h - 6)
-      ctx.fillStyle = 'rgba(200,200,200,.9)'
+      ctx.fillStyle = 'rgba(234,179,8,.95)'
       ctx.fillText(label, x, h - 6)
     }
   }
@@ -265,11 +340,16 @@ function addTrack(id: string, name: string, dataUrl: string, pcm?: PcmInfo) {
   waveEl.appendChild(markTag)
   box.appendChild(resizer)
   let markTime: number | null = null
+  // 屏幕坐标 → 播放进度比例：扣除左侧刻度区，范围限定在波形区内
+  const ratioFromX = (x: number, width: number) => {
+    const usable = width - GUTTER
+    return usable > 0 ? Math.min(Math.max((x - GUTTER) / usable, 0), 1) : 0
+  }
   const onMove = (ev: MouseEvent) => {
     const rect = waveEl.getBoundingClientRect()
     const x = ev.clientX - rect.left
-    if (x < 0 || x > rect.width) return
-    const ratio = rect.width > 0 ? x / rect.width : 0
+    if (x < GUTTER || x > rect.width) return
+    const ratio = ratioFromX(x, rect.width)
     const duration = ws.getDuration() || 0
     hoverLine.style.left = x + 'px'
     hoverLine.style.display = 'block'
@@ -278,7 +358,7 @@ function addTrack(id: string, name: string, dataUrl: string, pcm?: PcmInfo) {
     hoverTip.style.display = 'block'
     const tipW = hoverTip.offsetWidth || 50
     let tx = x
-    if (x - tipW / 2 < 0) tx = tipW / 2
+    if (x - tipW / 2 < GUTTER) tx = GUTTER + tipW / 2
     else if (x + tipW / 2 > rect.width) tx = rect.width - tipW / 2
     hoverTip.style.left = tx + 'px'
   }
@@ -328,14 +408,14 @@ function addTrack(id: string, name: string, dataUrl: string, pcm?: PcmInfo) {
     if (duration <= 0) return
     const rect = waveEl.getBoundingClientRect()
     if (rect.width <= 0) return
-    const x = (markTime / duration) * rect.width
+    const x = GUTTER + (markTime / duration) * (rect.width - GUTTER)
     markLine.style.left = x + 'px'
     markLine.style.display = 'block'
     markTag.textContent = fmt(markTime)
     markTag.style.display = 'block'
     const tagW = markTag.offsetWidth || 40
     let tx = x
-    if (x - tagW / 2 < 0) tx = tagW / 2
+    if (x - tagW / 2 < GUTTER) tx = GUTTER + tagW / 2
     else if (x + tagW / 2 > rect.width) tx = rect.width - tagW / 2
     markTag.style.left = tx + 'px'
   }
@@ -346,8 +426,8 @@ function addTrack(id: string, name: string, dataUrl: string, pcm?: PcmInfo) {
     if (tgt && tgt.classList.contains('wave-resizer')) return
     const rect = waveEl.getBoundingClientRect()
     const x = ev.clientX - rect.left
-    if (x < 0 || x > rect.width) return
-    const ratio = rect.width > 0 ? x / rect.width : 0
+    if (x < GUTTER || x > rect.width) return
+    const ratio = ratioFromX(x, rect.width)
     const duration = ws.getDuration() || 0
     markTime = ratio * duration
     placeMark()
@@ -430,7 +510,7 @@ function addTrack(id: string, name: string, dataUrl: string, pcm?: PcmInfo) {
     ws.load(newDataUrl)
   }
 
-  tracks.push({ id, name, ws, card, pcm, reload })
+  tracks.push({ id, name, ws, card, pcm, reload, redrawGrid: drawGrid })
 }
 
 window.addEventListener('message', (e: MessageEvent) => {
@@ -456,7 +536,10 @@ window.addEventListener('message', (e: MessageEvent) => {
 // 主题切换时重设所有波形配色（VSCode 会改 body.class，canvas 需手动重画）
 new MutationObserver(() => {
   const c = themeColors()
-  for (const t of tracks) t.ws.setOptions({ waveColor: c.wave, progressColor: c.progress, cursorColor: c.cursor })
+  for (const t of tracks) {
+    t.ws.setOptions({ waveColor: c.wave, progressColor: c.progress, cursorColor: c.cursor })
+    t.redrawGrid()
+  }
 }).observe(document.body, { attributes: true, attributeFilter: ['class', 'data-vscode-theme-kind'] })
 
 vscode.postMessage({ type: 'ready' })

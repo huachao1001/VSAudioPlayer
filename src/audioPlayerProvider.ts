@@ -236,7 +236,7 @@ export class AudioPlayerProvider implements vscode.CustomEditorProvider<AudioPla
   .track-info select { background: var(--vscode-dropdown-background); color: var(--vscode-dropdown-foreground); border:1px solid var(--vscode-dropdown-border); border-radius:2px; padding:0 2px; font-size:12px; font-family:inherit; line-height:18px; cursor:pointer; }
   .track-time { flex-shrink:0; order:3; font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; color: var(--vscode-descriptionForeground); border:1px solid var(--vscode-panel-border); border-radius:3px; padding:2px 12px; line-height:24px; white-space:nowrap; }
   .track-time .cur { color: var(--ap-accent); }
-  .track { position:relative; display:flex; align-items:center; gap:10px; border:1px solid var(--vscode-panel-border); border-radius:4px; padding:6px 10px; transition: border-color .15s; }
+  .track { position:relative; display:flex; align-items:center; gap:10px; border:2px solid var(--ap-accent); border-radius:8px; padding:6px 10px; transition: border-color .15s; }
   .track .play { flex-shrink:0; background:none; border:0; padding:0; cursor:pointer; line-height:0; border-radius:50%; color: var(--ap-accent); transition: filter .12s, transform .12s; }
   .track .play:hover { filter: brightness(1.15); transform: scale(1.06); }
   .track .play:active { transform: scale(.96); }
