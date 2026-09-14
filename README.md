@@ -8,7 +8,7 @@ A VS Code extension that opens audio files (wav / mp3 / ogg / flac / m4a / aac /
 
 ## Features
 
-- **Waveform visualization** — rendered with WaveSurfer.js; bar style, normalized peaks.
+- **Waveform visualization** — rendered with WaveSurfer.js; bar style, optional peak normalization (off by default, toggleable via the header button).
 - **Multi-track compare** — right-click any audio file in the Explorer → *Add to Audio Player* to overlay more tracks in the same panel.
 - **Time grid** — adaptive tick marks and labels drawn behind the waveform.
 - **Playback control** — SVG play button; click the waveform to mark a start point and play from there.

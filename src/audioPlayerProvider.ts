@@ -206,6 +206,8 @@ export class AudioPlayerProvider implements vscode.CustomEditorProvider<AudioPla
     const i18n = JSON.stringify({
       empty: vscode.l10n.t('wv.empty'),
       btnPlayPause: vscode.l10n.t('wv.btn.playPause'),
+      btnNormalize: vscode.l10n.t('wv.btn.normalize'),
+      labelNormalize: vscode.l10n.t('wv.label.normalize'),
       diagReceived: vscode.l10n.t('wv.diag.received'),
       diagScriptLoaded: vscode.l10n.t('wv.diag.scriptLoaded'),
     })
@@ -230,7 +232,7 @@ export class AudioPlayerProvider implements vscode.CustomEditorProvider<AudioPla
   #list { display:flex; flex-direction:column; gap:48px; }
   .track-wrap { display:flex; flex-direction:column; gap:5px; }
   .track-head { display:flex; align-items:center; gap:8px; }
-  .track-name { flex:1; order:2; font-weight:600; padding:0 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right; }
+  .track-name { flex:1; order:2; font-weight:600; padding:0 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right; color: var(--ap-accent); }
   .track-info { flex-shrink:0; order:1; font-size:13px; font-variant-numeric:tabular-nums; color: var(--vscode-descriptionForeground); border:1px solid var(--vscode-panel-border); background:transparent; border-radius:3px; padding:1px 8px; line-height:20px; white-space:nowrap; }
   .track-info .pcm-sep { opacity:.6; padding:0 2px; }
   .track-info select { background: var(--vscode-dropdown-background); color: var(--vscode-dropdown-foreground); border:1px solid var(--vscode-dropdown-border); border-radius:2px; padding:0 2px; font-size:12px; font-family:inherit; line-height:18px; cursor:pointer; }
@@ -243,6 +245,9 @@ export class AudioPlayerProvider implements vscode.CustomEditorProvider<AudioPla
   .wave { flex:1; min-width:0; position:relative; height:156px; }
   .wave-grid { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; }
   .wave-resizer { position:absolute; left:-1px; right:-1px; bottom:-1px; height:8px; cursor:ns-resize; z-index:7; }
+  .norm-toggle { flex-shrink:0; order:1; background:transparent; color:var(--vscode-descriptionForeground); border:1px solid var(--vscode-panel-border); border-radius:3px; padding:1px 7px; font-size:13px; line-height:20px; cursor:pointer; font-family:inherit; }
+  .norm-toggle:hover { color: var(--ap-accent); border-color: var(--ap-accent); }
+  .norm-toggle.on { color: var(--ap-accent); border-color: var(--ap-accent); }
   .wave-resizer:hover { background: linear-gradient(to top, var(--ap-accent) 0, var(--ap-accent) 1px, transparent 1px); }
   .hover-line { position:absolute; top:0; left:0; width:1px; height:100%; background: var(--ap-hover); opacity:.85; pointer-events:none; display:none; z-index:5; }
   .hover-tip { position:absolute; top:2px; left:0; transform: translateX(-50%); background: var(--vscode-editorWidget-background); color: var(--vscode-editorWidget-foreground); border:1px solid var(--ap-hover); border-radius:3px; padding:2px 6px; font-size:11px; font-variant-numeric:tabular-nums; white-space:nowrap; pointer-events:none; display:none; z-index:6; box-shadow:0 2px 6px rgba(0,0,0,.4); }

@@ -9,6 +9,8 @@
   "ext.diag.readFileFail": "readFile 失败: ",
   "wv.empty": "暂无音频，请右键资源管理器中的音频文件添加",
   "wv.btn.playPause": "播放/暂停",
+  "wv.btn.normalize": "切换波形归一化（开 = 峰值放大到满幅显示）",
+  "wv.label.normalize": "归一化",
   "wv.diag.received": "[wv] 收到 addAudio: {0} ({1} 字符)，正在渲染…",
   "wv.diag.scriptLoaded": "[wv] 脚本已加载，发送 ready",
   "config.pcm.sampleRate.desc": "原始 PCM 文件的采样率（Hz），仅在打开 .pcm 文件时使用。",

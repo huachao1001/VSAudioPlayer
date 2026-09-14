@@ -9,6 +9,8 @@
   "ext.diag.readFileFail": "readFile failed: ",
   "wv.empty": "No audio yet. Right-click an audio file in the Explorer to add it.",
   "wv.btn.playPause": "Play/Pause",
+  "wv.btn.normalize": "Toggle waveform normalization (on = scale peaks to full height)",
+  "wv.label.normalize": "Normalize",
   "wv.diag.received": "[wv] received addAudio: {0} ({1} chars), rendering…",
   "wv.diag.scriptLoaded": "[wv] script loaded, sending ready",
   "config.pcm.sampleRate.desc": "Sample rate (Hz) for raw PCM files. Used only when opening .pcm files.",

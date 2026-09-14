@@ -80,6 +80,8 @@ interface RewrapAudioMsg {
 interface I18nBundle {
   empty: string
   btnPlayPause: string
+  btnNormalize: string
+  labelNormalize: string
   diagReceived: string
   diagScriptLoaded: string
 }
@@ -142,6 +144,20 @@ function addTrack(id: string, name: string, dataUrl: string, pcm?: PcmInfo) {
   const durEl = card.querySelector('.dur') as HTMLElement
   const infoEl = card.querySelector('.track-info') as HTMLElement
 
+  // 头部 normalize 切换（采样率徽标右侧）：开=峰值归一化到满幅，关=按原始幅度显示（只影响渲染，不改播放音量）
+  let normalizeOn = false
+  const normBtn = document.createElement('button')
+  normBtn.className = 'norm-toggle'
+  normBtn.textContent = __apI18n.labelNormalize
+  normBtn.title = __apI18n.btnNormalize
+  normBtn.setAttribute('aria-pressed', 'false')
+  normBtn.addEventListener('click', () => {
+    normalizeOn = !normalizeOn
+    ws.setOptions({ normalize: normalizeOn })
+    normBtn.classList.toggle('on', normalizeOn)
+    normBtn.setAttribute('aria-pressed', String(normalizeOn))
+  })
+
   // PCM 音轨：头部徽标改为三个下拉（通道/采样率/数据类型），任意改动即请求扩展重打包
   if (pcm) {
     const srSel = document.createElement('select')
@@ -188,6 +204,9 @@ function addTrack(id: string, name: string, dataUrl: string, pcm?: PcmInfo) {
     dtSel.addEventListener('change', fireRewrap)
   }
 
+  const headEl = card.querySelector('.track-head') as HTMLElement
+  headEl.appendChild(normBtn)
+
   const ws = WaveSurfer.create({
     container: waveEl,
     waveColor: themeColors().wave,
@@ -197,7 +216,7 @@ function addTrack(id: string, name: string, dataUrl: string, pcm?: PcmInfo) {
     barWidth: 2,
     barGap: 1,
     barRadius: 2,
-    normalize: true,
+    normalize: false,
   })
 
   // 悬浮竖线 + 时间气泡 + 拖拽改高度：全部基于外层 .wave-canvas，绝对定位不占流，避免干扰播放按钮对齐
